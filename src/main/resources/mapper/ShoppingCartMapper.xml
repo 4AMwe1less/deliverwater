@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="cn.deliver.water.mapper.ShoppingCartMapper">
+
+    <insert id="save" parameterType="cn.deliver.water.entity.ShoppingCartInfo">
+        INSERT INTO shoppingcart(userid, commodityID, commodityName, commoditySL, commodityDJ, commodityGG) VALUES (#{userid}, #{commodityID}, #{commodityName}, #{commoditySL}, #{commodityDJ},#{commodityGG})
+    </insert>
+
+
+
+    <select id="select" parameterType="java.lang.String" resultMap="cart_list">
+SELECT
+ s.userid,
+ s.commodityID,
+ s.commodityName,
+ SUM( s.commoditySL ) AS commoditySL,
+ s.commodityDJ,
+ s.commodityGG,
+ s.createTime,
+ ( SELECT p.url FROM photoes p WHERE p.gid = s.commodityID LIMIT 1 ) AS url
+FROM
+ shoppingcart s
+WHERE
+ s.userid =#{userid}
+GROUP BY
+ s.commodityName    </select>
+
+    <resultMap id="cart_list" type="cn.deliver.water.entity.ShoppingCartInfo">
+        <result property="userid" column="userid"></result>
+        <result property="commodityID" column="commodityID"></result>
+        <result property="commodityName" column="commodityName"></result>
+        <result property="commoditySL" column="commoditySL"></result>
+        <result property="commodityDJ" column="commodityDJ"></result>
+        <result property="commodityGG" column="commodityGG"></result>
+        <result property="imgurl" column="url"></result>
+    </resultMap>
+
+    <delete id="del" parameterType="java.lang.String">
+        delete from shoppingcart where userid = #{userid} and commodityID = #{commodityID}
+    </delete>
+
+</mapper>

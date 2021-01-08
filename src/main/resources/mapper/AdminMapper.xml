@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="cn.deliver.water.mapper.AdminMapper">
+    <insert id="insertAdminOther">
+        insert into admin set aid=#{aid},uname=#{uname},upwd=#{upwd},status=0
+    </insert>
+    <insert id="addExpresser">
+        insert into express set eid=#{eid},ename=#{ename},ephone=#{ephone},status = 0
+    </insert>
+    <insert id="addGoods">
+        insert into goods set gid=#{gid},gname=#{gname},gdesc=#{gdesc},gprice=#{gprice},gstand=#{gstand},createTime =#{createTime},status =0
+    </insert>
+    <update id="deleteExpresser">
+        update express set status = 1 where eid=#{eid}
+    </update>
+    <update id="delGoods">
+        update goods set status =1 where gid=#{gid}
+    </update>
+    <update id="updateGoods" parameterType="java.lang.String">
+        update goods
+        <trim prefix="set" suffixOverrides=",">
+            <if test="gname != null">
+                gname =#{gname},
+            </if>
+            <if test="gdesc != null">
+                gdesc =#{gdesc},
+            </if>
+            <if test="gprice != null">
+                gprice =#{gprice},
+            </if>
+            <if test="gstand != null">
+                gstand =#{gstand},
+            </if>
+        </trim>
+        where gid =#{gid}
+    </update>
+
+    <select id="getUpwdByUname" resultType="java.lang.String">
+        select upwd from admin where uname =#{uname}
+    </select>
+    <select id="getAllOrder" resultType="cn.deliver.water.entity.OrderInfo">
+        select * from bw_orderinfo
+    </select>
+    <select id="getAllExpresser" resultType="cn.deliver.water.entity.Express">
+        select * from express where  status =0
+    </select>
+    <select id="getAllGoods" resultType="cn.deliver.water.entity.GoodsPhotoes">
+SELECT
+	t.pid,
+	t.gid,
+	t.url,
+	a.gname,
+	a.gdesc,
+	a.gprice,
+	a.gstand
+FROM
+	photoes t,
+	goods a
+WHERE
+	t.gid = a.gid
+	AND t.STATUS = 0
+	AND a.STATUS = 0
+	AND t.pid IN ( SELECT MIN( pid ) FROM photoes WHERE STATUS = 0  GROUP BY gid )
+ORDER BY
+	a.createTime ASC;
+    </select>
+    <select id="getOneGood" resultType="cn.deliver.water.entity.Goods">
+        select * from goods where gid = #{gid}
+    </select>
+    <select id="getWeekOrder" resultType="cn.deliver.water.entity.OrderInfo" resultMap="order_money_type">
+        SELECT order_money,order_type FROM bw_orderinfo where DATE_SUB(CURDATE(), INTERVAL 6 DAY) &lt;= date(order_submit_time)
+    </select>
+<resultMap id="order_money_type" type="cn.deliver.water.entity.OrderInfo">
+    <id property="ID" column="ID"></id>
+    <result property="order_money" column="order_money"></result>
+    <result property="order_type" column="order_type"></result>
+</resultMap>
+
+</mapper>

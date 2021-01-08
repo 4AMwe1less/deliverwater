@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.deliver.water.mapper.FileMapper">
+    <insert id="saveImg">
+        insert into photoes (gid,url,createTime,status) values (#{gid},#{url},#{createTime},0)
+    </insert>
+    <update id="delPhoto">
+        update photoes set status = 1 where gid =#{gid} and pid =#{pid}
+    </update>
+    <update id="updateIsTou">
+        update photoes set istou = 1 where pid = (select * from (select min(pid) from photoes where gid = #{gid} and status =0) as a)
+    </update>
+
+
+    <!--查询所有-->
+    <select id="list" resultType="cn.deliver.water.entity.Files">
+        SELECT pid,gid,url,createTime FROM photoes where gid = #{gid} and status = 0
+    </select>
+
+</mapper>

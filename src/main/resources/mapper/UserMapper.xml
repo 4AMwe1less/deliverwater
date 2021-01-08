@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="cn.deliver.water.mapper.UserMapper">
+    <insert id="register" parameterType="cn.deliver.water.entity.UserInfo">
+        INSERT INTO userinfo(ID, username, password, phone, gender) VALUES (#{ID},#{username},#{password},#{phone},#{gender});
+    </insert>
+    <insert id="addAddress">
+        INSERT INTO  address (aid,uid,uname,addr,phone,status,createTime) values (#{aid},#{uid},#{uname},#{addr},#{phone},0,#{createTime})
+    </insert>
+    <update id="delAddress">
+        update address set status = 1 where uid =#{uid} and aid=#{aid}
+    </update>
+    <update id="updateAddress">
+        update address
+        <trim prefix="set" suffixOverrides=",">
+            <if test="add!=null">
+                addr = #{add},
+            </if>
+            <if test="uname !=null ">
+                uname = #{uname},
+            </if>
+            <if test="phone != null">
+                phone = #{phone},
+            </if>
+        </trim>
+        WHERE uid  = #{uid} and aid =#{aid}
+    </update>
+    <update id="setQrCode">
+       update userinfo set qrcodeUrl =#{url} where ID =#{uid}
+    </update>
+    <update id="updateUphoneByopenid">
+        update userinfo set uphone=#{uphone} where ID =#{openid}
+    </update>
+    <insert id="insertOpenidAndPhone">
+        insert into userinfo(ID,uphone) values(#{openid},#{phone})
+    </insert>
+    <insert id="insertSuperior">
+        insert into contacts(Aopenid,Bopenid) values (#{Aopenid},#{Bopenid})
+    </insert>
+    <insert id="insertMoney">
+        insert into user_money (userid,money,numberOrders) values (#{openid},0,0)
+    </insert>
+
+
+    <select id="login" resultType="cn.deliver.water.entity.UserInfo">
+        select * from userinfo where username = #{username} and password = #{password}
+    </select>
+    <select id="getAllAddress" resultType="cn.deliver.water.entity.AddressInfo">
+        select * from address where uid =#{uid} and status = 0 order by createTime asc
+    </select>
+    <select id="getAddr" resultType="cn.deliver.water.entity.AddressInfo">
+        select * from address where aid=#{aid}
+    </select>
+    <select id="getAllGoods" resultType="cn.deliver.water.entity.Goods">
+        SELECT
+	t.pid,
+	t.gid,
+	t.url,
+	a.gname,
+	a.gdesc,
+	a.gprice,
+	a.gstand
+FROM
+	photoes t,
+	goods a
+WHERE
+	t.gid = a.gid
+	AND t.STATUS = 0
+	AND a.STATUS = 0
+	AND t.pid IN ( SELECT MIN( pid ) FROM photoes WHERE STATUS = 0  GROUP BY gid )
+ORDER BY
+	a.createTime ASC;
+    </select>
+    <select id="countOrder" resultType="java.lang.Integer">
+        select count(*) from bw_orderinfo where 1=1 and order_state =1
+    </select>
+    <select id="countQrCode" resultType="java.lang.Integer">
+        select count(*) from userinfo where ID =#{uid}
+    </select>
+    <select id="getQrCode" resultType="java.lang.String">
+        select qrcodeUrl from userinfo where ID =#{uid}
+    </select>
+    <select id="countOpenid" resultType="java.lang.Integer">
+        select count(*) from userinfo where ID =#{openid} and qrcodeUrl  != null
+    </select>
+    <select id="countOrderMo" resultType="java.lang.Integer">
+        select count(*) from bw_orderinfo where user_id =#{openid} and order_state = 3
+    </select>
+    <select id="countSuperior" resultType="java.lang.Integer">
+        select count(*) from contacts where Bopenid=#{Bopenid}
+    </select>
+    <select id="countLower" resultType="java.lang.Integer">
+        select count(*) from contacts where Aopneid=#{openid}
+    </select>
+    <select id="countOpenidNull" resultType="java.lang.Integer">
+        select count(*) from userinfo where ID =#{openid}
+    </select>
+</mapper>

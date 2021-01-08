@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="cn.deliver.water.mapper.UserMoneyMapper">
+    <update id="updateMoney" parameterType="java.lang.String">
+        UPDATE user_money SET money = money + #{addMoney} WHERE userid = #{userid}
+    </update>
+
+    <update id="updateOrderNumber" parameterType="java.lang.String">
+        UPDATE user_money SET numberOrders = numberOrders + 1 WHERE userid = #{userid}
+    </update>
+
+    <select id="byOrderidGetOrderMoney" parameterType="java.lang.String" resultType="java.lang.String">
+    select order_money from bw_orderinfo where id = #{orderid}
+</select>
+    <select id="byOrderidGetUserid" parameterType="java.lang.String" resultType="java.lang.String">
+    select user_id from bw_orderinfo where id = #{orderid}
+</select>
+
+    <select id="getUserFatherID" parameterType="java.lang.String" resultType="java.lang.String">
+        SELECT Aopenid FROM contacts WHERE Bopenid = #{userid}
+    </select>
+
+    <select id="getUserOrderNumber" parameterType="java.lang.String" resultType="java.lang.String">
+        select numberOrders from user_money where userid = #{userid}
+    </select>
+
+    <select id="getMoney" parameterType="java.lang.String" resultType="java.lang.String">
+        SELECT money from user_money WHERE userid = #{userid}
+    </select>
+
+    <resultMap id="m_list" type="cn.deliver.water.entity.GetUserMoneyInfo">
+        <result property="id" column="id"></result>
+        <result property="username" column="username"></result>
+        <result property="uphone" column="uphone"></result>
+        <result property="money" column="money"></result>
+    </resultMap>
+
+    <select id="usermoneylist" parameterType="java.lang.String" resultMap="m_list">
+        SELECT u.id,u.username,u.uphone,m.money from userinfo u INNER JOIN user_money m on u.id = m.userid where 1=1
+        <if test="uphone!=null">
+            and u.uphone = #{uphone}
+        </if>
+    </select>
+
+    <select id="exclude_notMoney" parameterType="java.lang.String" resultType="java.lang.String">
+        SELECT SUM(order_money)  * 0.3 FROM bw_orderinfo WHERE user_id in(SELECT Bopenid from contacts where Aopenid = #{userid}) AND order_state = 1 or order_state = 2
+    </select>
+    <select id="countUphone" resultType="java.lang.Integer">
+        select count(*) from userinfo where uphone =#{uphone}
+    </select>
+
+    <select id="byOrderidGetIscoupon" parameterType="java.lang.String" resultMap="iscoupon">
+        SELECT
+	        o.iscoupon,o.discount_money
+        FROM
+	        bw_orderinfo o where o.ID = #{orderid}
+    </select>
+
+    <resultMap id="iscoupon" type="java.util.HashMap">
+        <result property="iscoupon" column="iscoupon" ></result>
+        <result property="discount_money" column="discount_money" ></result>
+    </resultMap>
+
+
+
+</mapper>

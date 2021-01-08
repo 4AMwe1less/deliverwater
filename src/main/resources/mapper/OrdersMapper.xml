@@ -1,0 +1,156 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="cn.deliver.water.mapper.OrdersMapper">
+
+    <select id="listorder" parameterType="cn.deliver.water.entity.OrderInfo" resultMap="order_list">
+        SELECT
+        *
+        FROM
+        bw_orderinfo z
+        INNER JOIN bw_orderinfo_mx zz ON z.id = zz.order_id
+        INNER JOIN photoes g ON zz.commodity_id = g.gid
+        where 1=1
+        <if test="ID!=null">
+            and ID = #{ID}
+        </if>
+        <if test="user_id!=null">
+            and user_id = #{user_id}
+        </if>
+        <if test="order_state!=null">
+            and order_state = #{order_state}
+        </if>
+        <if test="order_type!=null">
+            and order_type = #{order_type}
+        </if>
+        <if test="psr!=null">
+            and psr = #{psr}
+        </if>
+        GROUP BY
+        g.gid,z.id
+        ORDER BY z.order_submit_time DESC
+
+    </select>
+
+    <resultMap id="order_list" type="cn.deliver.water.entity.OrderInfo">
+        <id property="ID" column="ID"></id>
+        <result property="user_id" column="user_id"></result>
+        <result property="order_state" column="order_state"></result>
+        <result property="order_money" column="order_money"></result>
+        <result property="order_type" column="order_type"></result>
+        <result property="order_submit_time" column="order_submit_time"></result>
+        <result property="order_over_time" column="order_over_time"></result>
+        <result property="order_msg" column="order_msg"></result>
+        <result property="delivery_address" column="delivery_address"></result>
+        <result property="sjr_name" column="sjr_name"></result>
+        <result property="sjr_phone" column="sjr_phone"></result>
+        <result property="psr" column="psr"></result>
+        <result property="remarks" column="remarks"></result>
+        <result property="cdk" column="cdk"></result>
+        <result property="psr_phone" column="psr_phone"></result>
+        <result property="discount_money" column="discount_money"></result>
+        <result property="iscoupon" column="iscoupon"></result>
+        <collection property="orderMxInfos" ofType="cn.deliver.water.entity.OrderMxInfo">
+            <result property="order_id" column="order_id"></result>
+            <result property="commodity_name" column="commodity_name"></result>
+            <result property="commodity_sl" column="commodity_sl"></result>
+            <result property="commodity_dj" column="commodity_dj"></result>
+            <result property="commodity_id" column="commodity_id"></result>
+            <result property="commodity_gg" column="commodity_gg"></result>
+            <result property="imageurl" column="url"></result>
+        </collection>
+    </resultMap>
+
+    <insert id="addOrder" parameterType="cn.deliver.water.entity.OrderInfo">
+ INSERT INTO bw_orderinfo (ID, user_id,  order_state, order_money, order_type, order_submit_time, order_over_time, order_msg, delivery_address, sjr_name, sjr_phone, psr, remarks,cdk,discount_money,iscoupon) values (#{ID}, #{user_id}, #{order_state}, #{order_money}, #{order_type}, #{order_submit_time}, #{order_over_time}, #{order_msg}, #{delivery_address}, #{sjr_name}, #{sjr_phone}, #{psr}, #{remarks},#{cdk},#{discount_money},#{iscoupon})
+   </insert>
+    <insert id="addOrderMx" parameterType="cn.deliver.water.entity.OrderInfo">
+ INSERT INTO bw_orderinfo_mx(order_id, commodity_name, commodity_sl, commodity_dj, commodity_id,commodity_gg) VALUES (#{order_id},#{commodity_name},#{commodity_sl},#{commodity_dj},#{commodity_id},#{commodity_gg})
+    </insert>
+
+    <update id="updateorder_state" parameterType="java.lang.String">
+        UPDATE bw_orderinfo
+        <trim prefix="set" suffixOverrides=",">
+            <if test="order_state!=null">
+                order_state = #{order_state},
+            </if>
+            <if test="order_state == 2">
+                psr = #{psr},psr_phone = #{psr_phone},order_type =2
+            </if>
+            <if test="order_state == 3">
+                order_over_time = #{order_over_time},
+            </if>
+        </trim>
+        WHERE ID = #{order_id}
+    </update>
+    <select id="turnoverAndOrderNumToday" parameterType="java.lang.String" resultType="java.util.Map">
+         SELECT COALESCE(sum(order_money/100),0) as turnover,COUNT(1) as order_numer FROM bw_orderinfo where to_days(order_submit_time) = to_days(now()) and order_state =3 ;
+    </select>
+    <select id="turnoverAndOrderNum" parameterType="java.lang.String" resultType="java.lang.String">
+        SELECT sum(order_money/100) from bw_orderinfo where order_state =3
+        and 1=1
+        <if test="order_qs_time!=null and order_js_time!=null">
+            and order_submit_time &gt;= #{order_qs_time} and order_submit_time &lt;= #{order_js_time}
+        </if>
+    </select>
+    <select id="turnoverAndOrderNumWeek" resultType="java.lang.String">
+        SELECT sum(order_money/100) from bw_orderinfo where order_state =3 and DATE_SUB(CURDATE(), INTERVAL 6 DAY) &lt;= date(order_submit_time)
+    </select>
+    <select id="getOrderWeek" resultType="cn.deliver.water.entity.Order" resultMap="order_count_list">
+        select
+        commodity_name as "commodity_name",
+        SUM(commodity_sl) as "order_count",
+        sum((commodity_dj * commodity_sl ))as "order_money"
+        from( (select * from bw_orderinfo  inner join bw_orderinfo_mx on bw_orderinfo.ID = bw_orderinfo_mx.order_id)as a)
+        where DATE_SUB(CURDATE(), INTERVAL 6 DAY) &lt;= date(order_submit_time)
+        GROUP BY
+        commodity_name
+    </select>
+    <resultMap id="order_count_list" type="cn.deliver.water.entity.Order">
+        <id property="commodity_name" column="commodity_name"></id>
+        <result property="order_money" column="order_money"></result>
+        <result property="order_count" column="order_count"></result>
+    </resultMap>
+    <select id="getOrderTime" parameterType="java.lang.String" resultType="cn.deliver.water.entity.Order" resultMap="order_count_list">
+        select
+        commodity_name as "commodity_name",
+        SUM(commodity_sl) as "order_count",
+        sum((commodity_dj * commodity_sl ))as "order_money"
+        from( (select * from bw_orderinfo  inner join bw_orderinfo_mx on bw_orderinfo.ID = bw_orderinfo_mx.order_id)as a)
+
+        <if test="order_qs_time!=null and order_js_time!=null">
+            where    order_submit_time &gt;= #{order_qs_time} and order_submit_time &lt;= #{order_js_time} and order_state =3
+        </if>
+        GROUP BY
+        commodity_name
+
+    </select>
+    <select id="selectTurnOverTime" resultType="java.lang.String">
+        select count(1) as "order_number" from bw_orderinfo
+        <if test="order_qs_time!=null and order_js_time!=null">
+            where order_submit_time &gt;= #{order_qs_time} and order_submit_time &lt;= #{order_js_time} and order_state =3
+        </if>
+    </select>
+    <select id="selectTurnOverWeek" resultType="java.lang.String">
+        select count(1) as "order_number" from bw_orderinfo where DATE_SUB(CURDATE(), INTERVAL 6 DAY) &lt;= date(order_submit_time) and order_state = 3
+    </select>
+    <select id="bycdkgetorder" resultType="cn.deliver.water.entity.OrderInfo" resultMap="order_list">
+        SELECT DISTINCT
+	    *
+        FROM
+        bw_orderinfo z
+        INNER JOIN bw_orderinfo_mx zz ON z.id = zz.order_id
+        INNER JOIN photoes g ON zz.commodity_id = g.gid and g.status=0 where
+        cdk = #{cdk}
+        GROUP BY
+        g.gid,z.id
+        </select>
+    <select id="selectCountOrder" resultType="java.lang.Integer">
+        select count(*) from bw_orderinfo where cdk =#{cdk} and order_state = 1
+    </select>
+    <select id="getMoneyByID" resultType="java.lang.String">
+        select order_money from bw_orderinfo where order_id =#{order_id}
+    </select>
+    <update id="bycdkaddsjrmsg" parameterType="java.lang.String">
+        update bw_orderinfo set delivery_address = #{delivery_address},sjr_name=#{sjr_name},sjr_phone=#{sjr_phone},user_id =#{userid},order_state= 1 where cdk = #{cdk}
+    </update>
+        </mapper>
